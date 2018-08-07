@@ -1,19 +1,18 @@
 import os
 import time
 import re
+import tweepy
+import json
 from slackclient import SlackClient
-from config import access_token,access_token_secret,consumer_key,consumer_secret,SLACK_API_TOKEN,SLACK_BOT_TOKEN
+import config
 
-# instantiate Slack client
-#slack_client = SlackClient(os.environ.get('SLACK_BOT_TOKEN'))
-slack_client = SlackClient(SLACK_BOT_TOKEN)
+slack_client = SlackClient('xoxb-412431558647-410967757153-pnR6j58kO49dncsCNqZgoDFh')
 
-# starterbot's user ID in Slack: value is assigned after the bot starts up
 starterbot_id = None
 
 # constants
 RTM_READ_DELAY = 1 # 1 second delay between reading from RTM
-EXAMPLE_COMMAND = "do"
+EXAMPLE_COMMAND = "toptrends"
 MENTION_REGEX = "^<@(|[WU].+?)>(.*)"
 
 def parse_bot_commands(slack_events):
@@ -54,8 +53,34 @@ def handle_command(command, channel):
     # Sends the response back to the channel
     slack_client.api_call(
         "chat.postMessage",
-        channel=channel,
-        text=response or default_response
+        channel="#portiapps",
+        text= post_trends()
+    )
+def post_trends():
+    authenticate = tweepy.OAuthHandler(config.consumer_key, config.consumer_secret)
+    authenticate.set_access_token(config.access_token, config.access_token_secret)
+    api = tweepy.API(authenticate)
+
+    # Where On Earth ID for Pasig is1187115.
+    PASIG_WOE_ID = 1
+
+    trend = api.trends_place(PASIG_WOE_ID)
+
+    trend = json.loads(json.dumps(trend, indent=1))
+
+    trend_temp = []
+    for trend_loop in trend[0]["trends"]:
+        trend_temp.append((trend_loop["name"]))
+
+    trending_all = ', \n'.join(trend_temp[:10])
+
+    return trending_all
+
+def post_message():
+    slack_client.api_call(
+        "chat.postMessage",
+        channel="#portiapps",
+        text= post_trends()
     )
 
 if __name__ == "__main__":
