@@ -1,8 +1,12 @@
 import os
 import time
 import re
+
+import schedule as schedule
 import tweepy
 import json
+import schedule
+import time
 from slackclient import SlackClient
 import config
 
@@ -88,10 +92,15 @@ if __name__ == "__main__":
         print("Starter Bot connected and running!")
         # Read bot's user ID by calling Web API method `auth.test`
         starterbot_id = slack_client.api_call("auth.test")["user_id"]
+        schedule.every(10).minutes.do(post_message)
+
         while True:
             command, channel = parse_bot_commands(slack_client.rtm_read())
             if command:
                 handle_command(command, channel)
             time.sleep(RTM_READ_DELAY)
+            schedule.run_pending()
     else:
         print("Connection failed. Exception traceback printed above.")
+
+
